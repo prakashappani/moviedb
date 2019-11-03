@@ -48,6 +48,4 @@ public class BaseTest {
 		String url = properties.getProperty("url");
 		return url;
 	}
-
-	}
 }
