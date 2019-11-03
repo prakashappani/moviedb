@@ -22,7 +22,7 @@ public class RestAPITestExample extends BaseTest {
 	 */
 	@Parameters({ "env" })
 	@BeforeSuite
-	public static void opts(@Optional("input") String env)  {
+	public static void opts(@Optional("input") String env) {
 		token = getToken(env);
 		RestAssured.baseURI = getBaseUrl(env);
 		properties = loadProperties(env);
@@ -30,10 +30,9 @@ public class RestAPITestExample extends BaseTest {
 
 	/**
 	 * @param query - movie name
-	 */	
+	 */
 	public Response getResponse(String query) {
-		return RestAssured.given()
-				.params("api_key", token,"query", query)
+		return RestAssured.given().params("api_key", token, "query", query)
 				.get();
 	}
 
@@ -53,43 +52,39 @@ public class RestAPITestExample extends BaseTest {
 		List<String> l = jsonpath.getList("results.title");
 		for (String s : l) {
 			System.out.println("List is " + s);
+			Assert.assertEquals(s.contains(moviename), true);
 		}
-		for (int i = 0; i < l.size(); i++) {
-			Assert.assertEquals(l.get(i).contains(moviename), true);
-		}
-		System.out.println(response.asString());
 	}
 
 	/**
-	 * Verify user is able to fetch all the expected total_results for the when the
-	 * movie title has trail end spaces
+	 * Verify user is able to fetch all the expected total_results for the when
+	 * the movie title has trail end spaces
 	 *
 	 * @throws IOException
 	 */
 	@Test()
 	public void verifymovieresults_ignoreTrailEndSpaces() {
-		String moviename = " " + properties.getProperty("moviename") + " ";
-		Response response = getResponse(moviename);
+		String moviename = properties.getProperty("moviename");
+		String movienameWithSpaces = " " + moviename + " ";
+		Response response = getResponse(movienameWithSpaces);
 		JsonPath jsonpath = response.jsonPath();
-		System.out.println(response.getBody().prettyPrint());
+		response.getBody().prettyPrint();
 
 		Assert.assertEquals(200, response.getStatusCode());
 		List<String> l = jsonpath.getList("results.title");
 
 		for (String s : l) {
 			System.out.println("List is " + s);
-		}
-		for (int i = 0; i < l.size(); i++) {
-			Assert.assertEquals(l.get(i).contains(properties.getProperty("moviename")), true);
+			Assert.assertEquals(s.contains(moviename), true);
 		}
 
 	}
 
 	/***
 	 * Verify user is able to fetch all the paginated results when queried with
-	 * movie name and page The below testcase counts the total_results and paginate
-	 * the end point, count the results in each page and assert it with the
-	 * total_results from the response
+	 * movie name and page The below testcase counts the total_results and
+	 * paginate the end point, count the results in each page and assert it with
+	 * the total_results from the response
 	 * 
 	 * @throws IOException
 	 */
@@ -104,7 +99,7 @@ public class RestAPITestExample extends BaseTest {
 
 		for (int i = 1; i <= total_pages; i++) {
 			Response response2 = RestAssured.given()
-					.params("api_key", token,"query", moviename,"page", i)
+					.params("api_key", token, "query", moviename, "page", i)
 					.get();
 			JsonPath jsonpath2 = response2.jsonPath();
 			List<String> l2 = jsonpath2.getList("results.title");
@@ -112,7 +107,7 @@ public class RestAPITestExample extends BaseTest {
 			current_pagecount = current_pagecount + l2.size();
 			System.out.println("current pagecount" + current_pagecount);
 		}
-		Assert.assertEquals(total_results, current_pagecount);
+		Assert.assertEquals(current_pagecount, total_results);
 	}
 
 	/**
@@ -133,7 +128,8 @@ public class RestAPITestExample extends BaseTest {
 	/**
 	 * Performance test Verify the time taking to fetch all the expected
 	 * total_results for the searched movie title when there are 1000 (maximum)
-	 * pages. We can use the Thread to count the time and assert based on the SLA.
+	 * pages. We can use the Thread to count the time and assert based on the
+	 * SLA.
 	 */
 	@Test()
 	public void verifyMovieResults_PaginationwithMaxPages() {
@@ -146,86 +142,158 @@ public class RestAPITestExample extends BaseTest {
 	 **/
 	@Test()
 	public void verifyMovieResults_NotokenProvided() {
+		String moviename = properties.getProperty("moviename");
+		Response response = RestAssured.given().params("query", moviename)
+				.get();
+		Assert.assertEquals(response.getStatusCode(), 401);
 
 	}
 
 	/**
-	 * Verify user with Invalid token key provided and queried with the movie title,
-	 * the response code is 401 unauthorized
+	 * Verify user with Invalid token key provided and queried with the movie
+	 * title, the response code is 401 unauthorized
 	 **/
 	@Test()
 	public void verifyMovieResults_InvalidAPIkey() {
-
+		String moviename = properties.getProperty("moviename");
+		Response response = RestAssured.given()
+				.params("api_key", "Invalid Token", "query", moviename).get();
+		Assert.assertEquals(response.getStatusCode(), 401);
 	}
 
 	/**
-	 * Verify user is able to fetch all the expected total_results for the searched
-	 * movie title. Verify with optional parameters include_adult, region, year and
-	 * primary_release_year,page and language. We should get the correct movie
-	 * titles as expected.
+	 * Verify user is able to fetch all the expected total_results for the
+	 * searched movie title. Verify with optional parameters include_adult,
+	 * region, year and primary_release_year,page and language. We should get
+	 * the correct movie titles as expected.
 	 *
 	 * @throws IOException
 	 */
 	@Test()
 	public void verifyMovieResults_optionalParams() {
+		String moviename = properties.getProperty("moviename");
+		Response response = RestAssured.given().params("api_key", token,
+				"query", "Women", "page", 10, "include_adult", false).get();
+		Assert.assertEquals(response.getStatusCode(), 200);
 
+		JsonPath jsonpath = response.jsonPath();
+		response.getBody().prettyPrint();
+
+		List<Boolean> l = jsonpath.getList("results.adult");
+		for (Boolean s : l) {
+			Assert.assertFalse(s);
+		}
 	}
 
 	/**
 	 * Verify user is able to fetch the expected total_results for the optional
-	 * parameters combination with query, primary release_year and year.
+	 * parameters combination with query, primary_release_year and year.
 	 */
 	@Test()
 	public void verifyMovieResults_fewoptionalParams() {
+		String moviename = properties.getProperty("moviename");
+		Response response = RestAssured.given().params("api_key", token,
+				"query", moviename, "primary_release_year", 2016, "year", 2016)
+				.get();
+		Assert.assertEquals(response.getStatusCode(), 200);
 
+		JsonPath jsonpath = response.jsonPath();
+		response.getBody().prettyPrint();
+
+		List<String> l = jsonpath.getList("results.release_date");
+
+		for (String s : l) {
+			Assert.assertEquals(s.contains("2016"), true);
+		}
 	}
 
 	/**
-	 * Verify user is able to fetch all the expected total_results for the searched
-	 * movie title. Verify error thrown for incorrect formats submitted in the
-	 * optional parameters like language and region.
+	 * Verify user is able to fetch all the expected total_results for the
+	 * searched movie title. Verify error thrown for incorrect formats submitted
+	 * in the optional parameters like language and region.
 	 *
 	 * @throws IOException
 	 */
 	@Test()
 	public void verifyMovieResults_ErroroptionalParams() {
+		String moviename = properties.getProperty("moviename");
+		Response response = RestAssured.given().params("api_key", token,
+				"query", moviename, "language", "en", "page", 1, "year", 2016)
+				.get();
+		Assert.assertEquals(200, response.getStatusCode());
+		JsonPath jsonpath = response.jsonPath();
+		jsonpath.prettyPrint();
+		List<String> l = jsonpath.getList("results.original_language");
 
+		System.out.println(l);
+		for (String s : l) {
+			Assert.assertEquals(s.contains("en"), true);
+		}
 	}
 
 	/**
-	 * Verify user is able to fetch all the expected total_results for the searched
-	 * movie title.Verify when the query parameter for title is of minimum length (1
-	 * in this case)
+	 * Verify user is able to fetch all the expected total_results for the
+	 * searched movie title.Verify when the query parameter for title is of
+	 * minimum length (1 in this case)
 	 *
 	 * @throws IOException
 	 */
 	@Test()
 	public void verifyMovieResults_minTitleSearch() {
+		String moviename = properties.getProperty("moviename");
+		Response response = RestAssured.given()
+				.params("api_key", token, "query", moviename, "page", 1).get();
+		Assert.assertEquals(response.getStatusCode(), 200);
+		JsonPath jsonpath = response.jsonPath();
 
+		List<String> l = jsonpath.getList("results.id");
+		Assert.assertEquals(l.size(), 20);
 	}
 
 	/**
-	 * Verify user is able to request for resource that does not exist and get404
-	 * error with message
+	 * Verify user is able to request for resource that does not exist and
+	 * get404 error with message
 	 */
 	@Test()
 	public void verifyMovieResults_resourceNotFound() {
-
+		String inValidURI = "https://api.themoviedb.org/3/search/movieinvalid";
+		Response response = RestAssured.given().baseUri(inValidURI)
+				.params("api_key", token, "query", "Saving the Titanic", "page",
+						1)
+				.get();
+		Assert.assertEquals(response.getStatusCode(), 404);
 	}
 
 	/**
-	 * Verify user is able to fetch all the expected total_results for the searched
-	 * movie title with only one result
+	 * Verify user is able to fetch all the expected total_results for the
+	 * searched movie title with only one result
 	 * 
 	 * @throws IOException
 	 */
+	@Test()
+	public void verifyMovieResults_OneResult() {
+		Response response = RestAssured.given().params("api_key", token,
+				"query", "Saving the Titanic", "page", 1).get();
+		Assert.assertEquals(response.getStatusCode(), 200);
+		JsonPath jsonpath = response.jsonPath();
+		List<String> l = jsonpath.getList("results.id");
+		Assert.assertEquals(l.size(), 1);
+	}
 
 	/**
-	 * Verify user is able to fetch all the expected total_results for the searched
-	 * movie title with proper error message when queried for an invalid or
-	 * incorrect page number that does not exist.
+	 * Verify user is able to fetch all the expected total_results for the
+	 * searched movie title with proper error message when queried for an
+	 * invalid or incorrect page number that does not exist.
 	 * 
 	 * @throws IOException
 	 */
+	@Test()
+	public void verifyMovieResults_PageDoesNotExists() {
+		String moviename = properties.getProperty("moviename");
+		Response response = RestAssured.given()
+				.params("api_key", token, "query", moviename, "page", 999)
+				.get();
+		Assert.assertEquals(response.getStatusCode(), 422);
+	}
 
 }
