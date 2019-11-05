@@ -1,3 +1,4 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="REST API Testing Example" verbose="1" >
   <test name="Movie Search">
     <classes>
