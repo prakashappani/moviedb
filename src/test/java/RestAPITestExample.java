@@ -29,14 +29,6 @@ public class RestAPITestExample extends BaseTest {
 	}
 
 	/**
-	 * @param query - movie name
-	 */
-	public Response getResponse(String query) {
-		return RestAssured.given().params("api_key", token, "query", query)
-				.get();
-	}
-
-	/**
 	 * Verify user is able to fetch all the movie records when queried with the
 	 * default parameters search query is moviename
 	 *
@@ -46,12 +38,13 @@ public class RestAPITestExample extends BaseTest {
 	@Test()
 	public void verifymovieresults_searchedwithTitle_requiredparams() {
 		String moviename = properties.getProperty("moviename");
-		Response response = getResponse(moviename);
+		Response response = RestAssured.given().params("api_key", token, "query", moviename)
+				.get();
 		JsonPath jsonpath = response.jsonPath();
 		Assert.assertEquals(200, response.getStatusCode());
 		List<String> l = jsonpath.getList("results.title");
+		
 		for (String s : l) {
-			System.out.println("List is " + s);
 			Assert.assertEquals(s.contains(moviename), true);
 		}
 	}
@@ -66,15 +59,13 @@ public class RestAPITestExample extends BaseTest {
 	public void verifymovieresults_ignoreTrailEndSpaces() {
 		String moviename = properties.getProperty("moviename");
 		String movienameWithSpaces = " " + moviename + " ";
-		Response response = getResponse(movienameWithSpaces);
+		Response response = RestAssured.given().params("api_key", token, "query", movienameWithSpaces)
+				.get();
 		JsonPath jsonpath = response.jsonPath();
-		response.getBody().prettyPrint();
-
 		Assert.assertEquals(200, response.getStatusCode());
 		List<String> l = jsonpath.getList("results.title");
-
+		
 		for (String s : l) {
-			System.out.println("List is " + s);
 			Assert.assertEquals(s.contains(moviename), true);
 		}
 
@@ -92,7 +83,8 @@ public class RestAPITestExample extends BaseTest {
 	@Test()
 	public void verifymovieresults_paginatedResults_matchTotalResults() {
 		String moviename = properties.getProperty("moviename");
-		Response response = getResponse(moviename);
+		Response response = RestAssured.given().params("api_key", token, "query", moviename)
+				.get();
 		int total_pages = response.path("total_pages");
 		int total_results = response.path("total_results");
 		int current_pagecount = 0;
@@ -103,9 +95,7 @@ public class RestAPITestExample extends BaseTest {
 					.get();
 			JsonPath jsonpath2 = response2.jsonPath();
 			List<String> l2 = jsonpath2.getList("results.title");
-			System.out.println("size is " + l2.size());
 			current_pagecount = current_pagecount + l2.size();
-			System.out.println("current pagecount" + current_pagecount);
 		}
 		Assert.assertEquals(current_pagecount, total_results);
 	}
@@ -117,9 +107,8 @@ public class RestAPITestExample extends BaseTest {
 	@Test()
 	public void verifyMovieResults_MovieNotExists() {
 		String moviename = properties.getProperty("Nonexisting_moviename");
-		Response response = getResponse(moviename);
-
-		// int total_pages= response.path("total_pages");
+		Response response = RestAssured.given().params("api_key", token, "query", moviename)
+				.get();
 		int total_results = response.path("total_results");
 		Assert.assertEquals(total_results, 0);
 		Assert.assertEquals(200, response.getStatusCode());
@@ -146,7 +135,6 @@ public class RestAPITestExample extends BaseTest {
 		Response response = RestAssured.given().params("query", moviename)
 				.get();
 		Assert.assertEquals(response.getStatusCode(), 401);
-
 	}
 
 	/**
@@ -173,13 +161,11 @@ public class RestAPITestExample extends BaseTest {
 	public void verifyMovieResults_optionalParams() {
 		String moviename = properties.getProperty("moviename");
 		Response response = RestAssured.given().params("api_key", token,
-				"query", "Women", "page", 10, "include_adult", false).get();
+				"query", moviename, "page", 2, "include_adult", true).get();
 		Assert.assertEquals(response.getStatusCode(), 200);
-
 		JsonPath jsonpath = response.jsonPath();
-		response.getBody().prettyPrint();
-
 		List<Boolean> l = jsonpath.getList("results.adult");
+		
 		for (Boolean s : l) {
 			Assert.assertFalse(s);
 		}
@@ -198,8 +184,6 @@ public class RestAPITestExample extends BaseTest {
 		Assert.assertEquals(response.getStatusCode(), 200);
 
 		JsonPath jsonpath = response.jsonPath();
-		response.getBody().prettyPrint();
-
 		List<String> l = jsonpath.getList("results.release_date");
 
 		for (String s : l) {
@@ -214,7 +198,7 @@ public class RestAPITestExample extends BaseTest {
 	 *
 	 * @throws IOException
 	 */
-	@Test()
+	@Test(enabled=false)
 	public void verifyMovieResults_ErroroptionalParams() {
 		String moviename = properties.getProperty("moviename");
 		Response response = RestAssured.given().params("api_key", token,
@@ -222,10 +206,8 @@ public class RestAPITestExample extends BaseTest {
 				.get();
 		Assert.assertEquals(200, response.getStatusCode());
 		JsonPath jsonpath = response.jsonPath();
-		jsonpath.prettyPrint();
 		List<String> l = jsonpath.getList("results.original_language");
-
-		System.out.println(l);
+		
 		for (String s : l) {
 			Assert.assertEquals(s.contains("en"), true);
 		}
@@ -245,7 +227,6 @@ public class RestAPITestExample extends BaseTest {
 				.params("api_key", token, "query", moviename, "page", 1).get();
 		Assert.assertEquals(response.getStatusCode(), 200);
 		JsonPath jsonpath = response.jsonPath();
-
 		List<String> l = jsonpath.getList("results.id");
 		Assert.assertEquals(l.size(), 20);
 	}

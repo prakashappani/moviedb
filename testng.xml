@@ -1,9 +1,8 @@
-<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
-
-<suite name="Suite1" verbose="1" >
-    <test name="REST API Testing Example">
-        <classes>
-            <class name=""RestAPITestExample/>
-        </classes>
-    </test>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="REST API Testing Example" verbose="1" >
+  <test name="Movie Search">
+    <classes>
+      <class name="RestAPITestExample"/>
+    </classes>
+  </test>
 </suite>
